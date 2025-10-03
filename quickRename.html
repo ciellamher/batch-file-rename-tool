@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk File Renamer</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --border: #e2e8f0;
+            --bg: #ffffff;
+            --bg-secondary: #f1f5f9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: var(--bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            color: var(--secondary);
+            font-size: 1.1rem;
+        }
+
+        .drop-area {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: var(--bg-secondary);
+            margin-bottom: 30px;
+        }
+
+        .drop-area:hover, .drop-area.dragover {
+            border-color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .drop-area p {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            color: var(--secondary);
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+
+        .btn-success:hover {
+            background-color: #0da271;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .rename-options {
+            margin-bottom: 30px;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        .option-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .option-group input, .option-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .file-list {
+            margin-bottom: 30px;
+        }
+
+        .file-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .file-list-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: var(--bg-secondary);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: rgba(59, 130, 246, 0.03);
+        }
+
+        .original-name {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .new-name {
+            font-weight: 500;
+            color: var(--primary);
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--secondary);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+            }
+            
+            .file-list-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Bulk File Renamer</h1>
+            <p class="subtitle">Drag & drop your files to rename them in bulk with live preview</p>
+        </header>
+
+        <div class="drop-area" id="dropArea">
+            <p>Drag & drop files here or</p>
+            <button class="btn" id="browseBtn">Browse Files</button>
+            <input type="file" id="fileInput" multiple style="display: none;">
+        </div>
+
+        <div class="rename-options">
+            <div class="option-group">
+                <label for="renamePattern">Rename Pattern</label>
+                <input type="text" id="renamePattern" placeholder="NewFile_{num}" value="NewFile_{num}">
+                <small>Use {num} for numbering, {name} for original name</small>
+            </div>
+            
+            <div class="option-group">
+                <label for="startNumber">Start Number</label>
+                <input type="number" id="startNumber" value="1" min="1">
+            </div>
+            
+            <div class="option-group">
+                <label for="numberFormat">Number Format</label>
+                <select id="numberFormat">
+                    <option value="1">1, 2, 3...</option>
+                    <option value="01">01, 02, 03...</option>
+                    <option value="001">001, 002, 003...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="file-list">
+            <div class="file-list-header">
+                <h2 class="file-list-title">Files to Rename</h2>
+                <button class="btn btn-danger" id="clearBtn">Clear All</button>
+            </div>
+            
+            <div id="fileListContainer">
+                <div class="empty-state" id="emptyState">
+                    <p>No files selected. Drag and drop files above or click browse.</p>
+                </div>
+                
+                <table id="fileTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Original Name</th>
+                            <th>New Name</th>
+                            <th>Type</th>
+                            <th>Size</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fileTableBody">
+                        <!-- Files will be added here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-success" id="renameBtn" disabled>Rename Files</button>
+            <button class="btn btn-secondary" id="downloadBtn" disabled>Download Renamed Files</button>
+        </div>
+
+        <footer>
+            <p>File Renamer Tool &copy; 2023 - All processing happens in your browser, no files are uploaded to any server.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropArea = document.getElementById('dropArea');
+            const fileInput = document.getElementById('fileInput');
+            const browseBtn = document.getElementById('browseBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const renameBtn = document.getElementById('renameBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const fileTable = document.getElementById('fileTable');
+            const fileTableBody = document.getElementById('fileTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const renamePattern = document.getElementById('renamePattern');
+            const startNumber = document.getElementById('startNumber');
+            const numberFormat = document.getElementById('numberFormat');
+            
+            let files = [];
+            
+            // Event handlers for drag and drop
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.classList.add('dragover');
+            }
+            
+            function unhighlight() {
+                dropArea.classList.remove('dragover');
+            }
+            
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const droppedFiles = dt.files;
+                handleFiles(droppedFiles);
+            }
+            
+            browseBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', () => {
+                handleFiles(fileInput.files);
+            });
+            
+            clearBtn.addEventListener('click', () => {
+                files = [];
+                updateFileList();
+            });
+            
+            renamePattern.addEventListener('input', updateFileList);
+            startNumber.addEventListener('input', updateFileList);
+            numberFormat.addEventListener('change', updateFileList);
+            
+            function handleFiles(fileList) {
+                for (let i = 0; i < fileList.length; i++) {
+                    const file = fileList[i];
+                    // Only add if not already in the list
+                    if (!files.some(f => f.name === file.name && f.size === file.size)) {
+                        files.push(file);
+                    }
+                }
+                updateFileList();
+            }
+            
+            function updateFileList() {
+                if (files.length === 0) {
+                    fileTable.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    renameBtn.disabled = true;
+                    downloadBtn.disabled = true;
+                    return;
+                }
+                
+                fileTable.style.display = 'table';
+                emptyState.style.display = 'none';
+                renameBtn.disabled = false;
+                downloadBtn.disabled = false;
+                
+                // Clear the table
+                fileTableBody.innerHTML = '';
+                
+                const pattern = renamePattern.value;
+                let counter = parseInt(startNumber.value) || 1;
+                const format = numberFormat.value;
+                
+                files.forEach(file => {
+                    const row = document.createElement('tr');
+                    
+                    // Original name cell
+                    const originalNameCell = document.createElement('td');
+                    originalNameCell.className = 'original-name';
+                    originalNameCell.textContent = file.name;
+                    row.appendChild(originalNameCell);
+                    
+                    // New name cell
+                    const newNameCell = document.createElement('td');
+                    newNameCell.className = 'new-name';
+                    
+                    const extension = file.name.includes('.') 
+                        ? file.name.substring(file.name.lastIndexOf('.')) 
+                        : '';
+                    const nameWithoutExt = file.name.includes('.') 
+                        ? file.name.substring(0, file.name.lastIndexOf('.')) 
+                        : file.name;
+                    
+                    // Format the number based on selection
+                    let formattedNum = counter.toString();
+                    if (format === '01' && counter < 10) {
+                        formattedNum = '0' + counter;
+                    } else if (format === '001' && counter < 10) {
+                        formattedNum = '00' + counter;
+                    } else if (format === '001' && counter < 100) {
+                        formattedNum = '0' + counter;
+                    }
+                    
+                    // Generate new name based on pattern
+                    let newName = pattern
+                        .replace(/{num}/g, formattedNum)
+                        .replace(/{name}/g, nameWithoutExt) + extension;
+                    
+                    newNameCell.textContent = newName;
+                    row.appendChild(newNameCell);
+                    
+                    // File type cell
+                    const typeCell = document.createElement('td');
+                    typeCell.textContent = extension || 'Unknown';
+                    row.appendChild(typeCell);
+                    
+                    // File size cell
+                    const sizeCell = document.createElement('td');
+                    sizeCell.textContent = formatFileSize(file.size);
+                    row.appendChild(sizeCell);
+                    
+                    fileTableBody.appendChild(row);
+                    counter++;
+                });
+            }
+            
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            renameBtn.addEventListener('click', () => {
+                if (files.length === 0) return;
+                
+                // Create a zip file with renamed files
+                const zip = new JSZip();
+                
+                let counter = parseInt(startNumber.value) || 1;
+                const format = numberFormat.value;
+                const pattern = renamePattern.value;
+                
+                files.forEach(file => {
+                    // Format the number based on selection
+                    let formattedNum = counter.toString();
+                    if (format === '01' && counter < 10) {
+                        formattedNum = '0' + counter;
+                    } else if (format === '001' && counter < 10) {
+                        formattedNum = '00' + counter;
+                    } else if (format === '001' && counter < 100) {
+                        formattedNum = '0' + counter;
+                    }
+                    
+                    const extension = file.name.includes('.') 
+                        ? file.name.substring(file.name.lastIndexOf('.')) 
+                        : '';
+                    const nameWithoutExt = file.name.includes('.') 
+                        ? file.name.substring(0, file.name.lastIndexOf('.')) 
+                        : file.name;
+                    
+                    // Generate new name based on pattern
+                    const newName = pattern
+                        .replace(/{num}/g, formattedNum)
+                        .replace(/{name}/g, nameWithoutExt) + extension;
+                    
+                    zip.file(newName, file);
+                    counter++;
+                });
+                
+                // Generate the zip file and trigger download
+                zip.generateAsync({type: "blob"})
+                .then(function(content) {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(content);
+                    link.download = 'renamed_files.zip';
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    
+                    alert('Files renamed and downloaded successfully!');
+                });
+            });
+            
+            downloadBtn.addEventListener('click', () => {
+                if (files.length === 0) return;
+                
+                // Create a zip file with original names
+                const zip = new JSZip();
+                
+                files.forEach(file => {
+                    zip.file(file.name, file);
+                });
+                
+                // Generate the zip file and trigger download
+                zip.generateAsync({type: "blob"})
+                .then(function(content) {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(content);
+                    link.download = 'original_files.zip';
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                });
+            });
+        });
+    </script>
+    
+    <!-- JSZip library for creating zip files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</body>
+</html>
